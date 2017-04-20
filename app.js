@@ -28,6 +28,12 @@ var recognizer = new builder.LuisRecognizer(model);
 var dialog = new builder.IntentDialog({ recognizers: [recognizer]});
 bot.dialog('/', dialog);
 
+// dialog.onBegin(function (session, args, next) {
+//     session.dialogData.name = args.name;
+//     session.send("Hi %s...", args.name);
+//     next();
+// });
+
 // bot.dialog('/', [
 //     function (session) {
 //         builder.Prompts.text(session, 'Hi');
