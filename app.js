@@ -3,6 +3,7 @@ var builder = require('botbuilder');
 var Request = require('tedious').Request;
 var Types = require('tedious').TYPES;
 var email = require('./sendemail');
+var chalk = require('chalk');
 
 //=========================================================
 // Bot Setup
@@ -28,11 +29,33 @@ var recognizer = new builder.LuisRecognizer(model);
 var dialog = new builder.IntentDialog({ recognizers: [recognizer]});
 bot.dialog('/', dialog);
 
-// dialog.onBegin(function (session, args, next) {
-//     session.dialogData.name = args.name;
-//     session.send("Hi %s...", args.name);
-//     next();
-// });
+var msg = " ";
+var greeted = 0;
+
+dialog.onBegin(function (session, args, next) {
+            msg = new builder.Message(session)
+            .textFormat(builder.TextFormat.xml)
+            .attachments([
+                new builder.HeroCard(session)
+                    .title("Welcome to Resource technical Bot")
+                    .subtitle("Smart resource management")
+                    .text("The smart resource management is a intelligent bot for PMs/SAs/TAs or TFS/Scheduler for resource management")
+                    .images([
+                        builder.CardImage.create(session, "http://www.theoldrobots.com/images26/gakk6.JPG")
+                    ])
+                    .tap(builder.CardAction.openUrl(session, "https://en.wikipedia.org/wiki/Space_Needle"))
+            ]);
+            session.send(msg);
+            greeted = 1;
+            // args.entities ? args.entities :null;
+            // session.send('Begin search for candidates like search java candidates in <location> etc..');
+            session.send(chalk.red('Begin search for candidates like search java candidates in <location> etc..'));
+            
+});
+
+
+
+// dialog.onBegin(builder.DialogAction.send("I can search candidates."));
 
 // bot.dialog('/', [
 //     function (session) {
@@ -65,7 +88,10 @@ bot.dialog('/', dialog);
 // // // Add intent handlers
 dialog.matches('SearchCandidate',[
     function (session, args, next){
-        // get all the entities 
+        // get all the entities
+        if (greeted===0){
+            session.send(msg);
+        } 
         session.send('Welcome! we are analyzing your message: \'%s\'', session.message.text);
 
         var cities = builder.EntityRecognizer.findEntity(args.entities, 'cities');
@@ -91,6 +117,7 @@ dialog.matches('SearchCandidate',[
         }
          
         if (!candidateprofile.primarySkill){
+            session.sendTyping();
             builder.Prompts.text(session, 'what primary skill you are looking for?');
         } else {
             next();
@@ -104,6 +131,7 @@ dialog.matches('SearchCandidate',[
         }
 
         if (pskill.primarySkill && !pskill.experienceLevel) {
+            session.sendTyping();
             builder.Prompts.text(session, 'what experience level candidate you are looking for ?');
         } else {
             next();
@@ -117,6 +145,7 @@ dialog.matches('SearchCandidate',[
             explevel.experienceLevel = results.response;
         }
         if (explevel.experienceLevel && explevel.primarySkill && !explevel.leadtime){
+            session.sendTyping();
             builder.Prompts.text(session, 'when do you need this candidate to start! eg in 1 week, in 3 months or 1st April etc..?');
         } else {
             next();
@@ -131,6 +160,7 @@ dialog.matches('SearchCandidate',[
             ltime.leadtime = results.response;
         }
         if (ltime.experienceLevel && ltime.primarySkill && ltime.leadtime && !ltime.cities){
+            session.sendTyping();
             builder.Prompts.text(session, 'which location candidate is required for?');
         } else {
             next();
