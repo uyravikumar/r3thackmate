@@ -82,7 +82,7 @@ dialog.matches('StartActivity',[
         }
 
         if (tech.technology && !tech.location) {
-            builder.Prompts.text(session, 'what location candidate is required?');
+            builder.Prompts.text(session, 'what location candidate is required ?');
         } else {
             next();
         }
