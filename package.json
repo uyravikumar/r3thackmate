@@ -1,0 +1,23 @@
+{
+  "name": "smartresourcing",
+  "version": "1.0.0",
+  "description": "smartresourcing",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mslokeshbabu/smartresourcing.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mslokeshbabu/smartresourcing/issues"
+  },
+  "homepage": "https://github.com/mslokeshbabu/smartresourcing#readme",
+  "dependencies": {
+    "botbuilder": "^3.7.0",
+    "restify": "^4.3.0"
+  }
+}
