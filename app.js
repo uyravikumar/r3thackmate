@@ -156,7 +156,7 @@ dialog.matches('SearchCandidate',[
                     console.log('error in connecting ' + err);
                     return;
                 }
-                session.send('search for candidates in %s to be available with lead time ::%s', duration.location, duration.ActivityDuration);
+                session.send('search for candidates in %s to be available with lead time ::%s', city.cities, city.leadtime);
                 executeStatement();
             });
 
