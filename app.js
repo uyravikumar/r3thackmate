@@ -141,12 +141,12 @@ dialog.matches('SearchCandidate',[
             console.log("Initiate database connection");
             var Connection = require('tedious').Connection;  
             var config = {
-                userName: 'ravi@mydb-ai-hack.database.windows.net',
-                password: 'Nkdc@2018',
-                server: 'mydb-ai-hack.database.windows.net',
+                userName: 'superuser@r3taihack.database.windows.net',
+                password: 'pms2secure@2017',
+                server: 'r3taihack.database.windows.net',
                 options: {
                     encrypt: true, 
-                    database: 'MyDB-AI-Hack', 
+                    database: 'r3taihack', 
                     rowCollectionOnRequestCompletion: true
                 }
             };
