@@ -201,13 +201,13 @@ dialog.matches('SearchCandidate',[
                     console.log('error in connecting ' + err);
                     return;
                 }
-                session.send('search for candidates in %s to be available with lead time ::%s', city.cities, city.leadtime);
+                session.send('search for candidates in %s to be available on ::%s', city.cities, city.leadtime);
                 executeStatement();
             });
 
             function executeStatement(){
                 //getting the role ID from demand table
-                var demquerystring = "SELECT Max(Role_Id) from Demand"
+                var demquerystring = "SELECT MAX(Role_Id) from Demand"
                 demroleid =  new Request(demquerystring, function(err, rowCount, rows){
                     if (err){
                         console.log(err);
