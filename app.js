@@ -4,6 +4,8 @@ var Request = require('tedious').Request;
 var Types = require('tedious').TYPES;
 var email = require('./sendemail');
 var chalk = require('chalk');
+var fs = require('fs');
+var moment = require('moment');
 
 //=========================================================
 // Bot Setup
@@ -13,6 +15,7 @@ var chalk = require('chalk');
 var server = restify.createServer();
 server.listen(process.env.port || process.env.PORT || 3978, function () {
    console.log('%s listening to %s', server.name, server.url); 
+//    server.post('hello');
 });
   
 // Create chat bot
@@ -143,10 +146,13 @@ dialog.matches('SearchCandidate',[
 
         if (results.response){
             explevel.experienceLevel = results.response;
+            // implement the string to pick a number 
+            explevel.experienceLevel = explevel.experienceLevel.substring(0,1);
+            console.log(explevel.experienceLevel);
         }
         if (explevel.experienceLevel && explevel.primarySkill && !explevel.leadtime){
             session.sendTyping();
-            builder.Prompts.text(session, 'when do you need this candidate to start! eg in 1 week, in 3 months or 1st April etc..?');
+            builder.Prompts.text(session, 'when do you need this candidate to start! eg in 1st April 2017 etc..?');
         } else {
             next();
         }
@@ -157,8 +163,11 @@ dialog.matches('SearchCandidate',[
         var ltime = session.dialogData.candidate;
 
         if (results.response){
+
             ltime.leadtime = results.response;
+            
         }
+
         if (ltime.experienceLevel && ltime.primarySkill && ltime.leadtime && !ltime.cities){
             session.sendTyping();
             builder.Prompts.text(session, 'which location candidate is required for?');
@@ -178,7 +187,7 @@ dialog.matches('SearchCandidate',[
             var Connection = require('tedious').Connection;  
             var config = {
                 userName: 'superuser@r3taihack.database.windows.net',
-                password: 'pms2secure@2017',
+                password: 'Pms2Secure2017',
                 server: 'r3taihack.database.windows.net',
                 options: {
                     encrypt: true, 
@@ -197,31 +206,75 @@ dialog.matches('SearchCandidate',[
             });
 
             function executeStatement(){
-                var sqlstring = "SELECT * FROM dbo.Employees";
-                req = new Request(sqlstring, function(err, rowCount, rows){
+                //getting the role ID from demand table
+                var demquerystring = "SELECT Max(Role_Id) from Demand"
+                demroleid =  new Request(demquerystring, function(err, rowCount, rows){
                     if (err){
                         console.log(err);
                     }
                     console.log(rowCount + ' rows');
+                    console.log(demroleid + 'role ID');
                     session.send ('we are at 1 :: %s', rowCount);
                 });
 
-                var result = "";
-                req.on('row',function(columns){
-                    columns.forEach(function(element) {
-                        if (element.value === null){
-                            console.log('NULL');
-                        } else {
-                            result+= element.value + " ";
-                        }
-                    });
-                    email.sendemail(result);
-                    console.log(result); 
-                    session.send('record: %s',result);
-                    result = "";
+                demroleid += 1;
+
+                // insert a record in Demand DB
+                var insertsqlstring ="insert into demand values ("+ demroleid +",null,null,null,"+city.cities+",null"+city.experienceLevel+",null,null,null,null,null,"+city.primarySkill+",null,null,null)";
+                deminsert =  new Request(insertsqlstring, function(err, rowCount, rows){
+                if (err){
+                        console.log(err);
+                }
+                    console.log(rowCount + ' in demand table rows');
+                    console.log(deminsert + 'insert results in demand table');
+                    session.send ('we are at 2 :: %s', rowCount);
                 });
+
+                // Query the employee table with skill , location
+                var querysqlstring = "SELECT e.PersonalID,e.Employment_Status, e.Career_Track, e.Talent_Segment, e.Standard_Job FROM Skill s, Employee e where  s.skill ="+city.primarySkill+" and s.Experience ="+city.experienceLevel+" and e.Metro_City ="+city.cities+ "and s.PersonalID = e.PersonalID";
+                req = new Request(querysqlstring, function(err, rowCount, rows){
+                    if (err){
+                        console.log(err);
+                    }
+                    console.log(rowCount + ' rows');
+                    session.send ('we are at 3 :: %s', rowCount);
+                });
+
+                var timenow = moment();
+                // var formatted = timenow.format('YYYY-MM-DD HH:mm:ss Z');
+                var formatted_1 = timenow.format('YYYYMMDDHHmmss');
+                // console.log(formatted);
+
+                var result = "";
+                var filename = "CandidateRecords"+formatted_1;
+                console.log(filename);
+
+                var stream = fs.createWriteStream(filename);
+                stream.once('open', function(fd) {
+
+                       req.on('row',function(columns){
+                            columns.forEach(function(element) {
+                                if (element.value === null){
+                                    console.log('NULL');
+                                } else {
+                                    result+= element.value + " ";
+                                }
+                            });
+
+                            // email.sendemail(result);
+                            stream.write(result);
+                            console.log(result); 
+                            session.send('record: %s',result);
+                            result = "";
+                        });
+                        stream.end();
+                });
+
                 req.on('doneInProc',function(rowCount, more){
-                console.log(rowCount + ' rows returned');
+
+                    console.log(rowCount + ' rows returned');
+                    // if row count is 0 , ask option to raise RRD
+                    // If row count is 
 
                 });
                 connection.execSql(req);
