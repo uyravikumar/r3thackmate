@@ -52,7 +52,7 @@ dialog.onBegin(function (session, args, next) {
             greeted = 1;
             // args.entities ? args.entities :null;
             // session.send('Begin search for candidates like search java candidates in <location> etc..');
-            session.send('Begin search for candidates like search java candidates in <location> etc..');
+            session.send('Hi User! How can I help today eg: search for java candidates in <location> etc..');
             
 });
 
@@ -95,7 +95,7 @@ dialog.matches('SearchCandidate',[
         if (greeted===0){
             session.send(msg);
         } 
-        session.send('Welcome! we are analyzing your message: \'%s\'', session.message.text);
+        session.send('please wait...I am analyzing your message: \'%s\'', session.message.text);
 
         var cities = builder.EntityRecognizer.findEntity(args.entities, 'cities');
         var datetime = builder.EntityRecognizer.findEntity(args.entities, 'datetime');
@@ -202,36 +202,84 @@ dialog.matches('SearchCandidate',[
                     return;
                 }
                 session.send('search for candidates in %s to be available on ::%s', city.cities, city.leadtime);
+                //executeDemandstatement();
+                //executeDemandinsert();
                 executeStatement();
             });
+            
+            var deamndrowcount = 0;
+            var totalrowcount = 0;
 
-            function executeStatement(){
-                //getting the role ID from demand table
-                var demquerystring = "SELECT MAX(Role_Id) from dbo.Demand$";
-                console.log("demand query :"+ demquerystring);
+            function executeDemandstatement(){
+                var demquerystring = "SELECT max(Role_Id) from dbo.Demand$";
+                console.log("Demand query :"+ demquerystring);
                 demroleid =  new Request(demquerystring, function(err, rowCount, rows){
                     if (err){
                         console.log(err);
                     }
                     console.log(rowCount + ' rows in Demand');
-                    console.log(demroleid + 'role ID');
-                    session.send ('we are at 1 :: %s', rowCount);
+                    // console.log(demroleid + ' role ID');
+                    // session.send ('we are at 1 :: %s', rowCount);
+                    
                 });
+                var result = "";
+                demroleid.on('row', function(columns) {
+                    console.log('row in select of demand');
+                    columns.forEach(function(column) {
+                    if (column.value === null) {
+                        console.log('NULL');
+                    } else {
+                        result+= column.value + " ";
+                    }
+                    });
+                    console.log(result);
+                    totalrowcount=result;
+                    console.log("total number of rows in demand:"+totalrowcount);
+                    result ="";
+                });
+                demroleid.on('doneInProc', function(rowCount, more) {
+                    console.log(rowCount + ' rows returned');
+                
+                });
+                connection.execSql(demroleid);
+            }
 
-                demroleid += 1;
-
-                // // insert a record in Demand DB
-                var insertsqlstring ="insert into demand values ("+ demroleid +",null,null,null,"+city.cities+",null"+city.experienceLevel+",null,null,null,null,null,"+city.primarySkill+",null,null,null)";
+            function executeDemandinsert(){
+                // insert a record in Demand DB
+                totalrowcount += 1;
+                var insertsqlstring ="insert into dbo.Demand$ values ("+totalrowcount+",null,null,null,"+city.cities+",null,"+city.experienceLevel+",null,null,null,null,null,"+city.primarySkill+",null,null,null)";
                 console.log("demand insert query :"+ insertsqlstring);
                 deminsert =  new Request(insertsqlstring, function(err, rowCount, rows){
                 if (err){
                         console.log(err);
                     }
                     console.log(rowCount + ' in demand table rows');
-                    console.log(deminsert + 'insert results in demand table');
-                    session.send ('we are at 2 :: %s', rowCount);
+                    // console.log(deminsert + 'insert results in demand table');
+                    // session.send ('we are at 2 :: %s', rowCount);
                 });
+                var result = "";
+                deminsert.on('row', function(columns) {
+                    console.log('row in insert');
+                    columns.forEach(function(column) {
+                    if (column.value === null) {
+                        console.log('NULL');
+                    } else {
+                        result+= column.value + " ";
+                    }
+                    });
+                    console.log(result);
+                    totalrowcount=result;
+                    result ="";
+                });
+                deminsert.on('doneInProc', function(rowCount, more) {
+                    console.log(rowCount + ' rows returned');
+                
+                });
+                connection.execSql(deminsert);
+            }
 
+            function executeStatement(){
+ 
                 // Query the employee table with skill , location
                 var querysqlstring = "SELECT top 10 e.PersonalID,e.Employment_Status, e.Career_Track, e.Talent_Segment, e.Standard_Job FROM dbo.Skill$ s, dbo.Employee$ e where lower(s.Skill) like '%"+city.primarySkill+"%' and s.Experience ="+city.experienceLevel+" and e.Metro_City ='"+city.cities+"' and s.PersonalID = e.PersonalID";
                 console.log(querysqlstring +': The query u want to send to DB');
@@ -240,7 +288,7 @@ dialog.matches('SearchCandidate',[
                         console.log(err);
                     }
                     console.log(rowCount + ' rows in employee and skill table');
-                    session.send ('we are at 3 :: %s', rowCount);
+                    // session.send ('we are at 3 :: %s', rowCount);
                 });
 
                 var timenow = moment();
