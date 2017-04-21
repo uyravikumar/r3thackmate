@@ -308,7 +308,7 @@ dialog.matches('SearchCandidate',[
                                 if (element.value === null){
                                     console.log('NULL');
                                 } else {
-                                    result+= element.value + "||";
+                                    result+= element.value + " || ";
                                 }
                             });
                             console.log(result);
