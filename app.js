@@ -53,7 +53,7 @@ dialog.onBegin(function (session, args, next) {
             // args.entities ? args.entities :null;
             // session.send('Begin search for candidates like search java candidates in <location> etc..');
             session.send('Hi Sam! How can I help today.. ');
-            session.send('Search for candidates : eg : Search for java Candidates:\'%s\'');
+            session.send('Search for candidates : eg : Search for java Candidates:');
             
 });
 
