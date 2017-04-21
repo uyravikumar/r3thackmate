@@ -261,10 +261,10 @@ dialog.matches('SearchCandidate',[
                                     result+= element.value + " ";
                                 }
                             });
-
+                            console.log(result);
                             // email.sendemail(result);
                             stream.write(result);
-                            console.log(result); 
+                            
                             session.send('record: %s',result);
                             result = "";
                         });
