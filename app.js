@@ -212,7 +212,7 @@ dialog.matches('SearchCandidate',[
                     if (err){
                         console.log(err);
                     }
-                    console.log(rowCount + ' rows');
+                    console.log(rowCount + ' rows in Demand');
                     console.log(demroleid + 'role ID');
                     session.send ('we are at 1 :: %s', rowCount);
                 });
@@ -242,11 +242,11 @@ dialog.matches('SearchCandidate',[
 
                 var timenow = moment();
                 // var formatted = timenow.format('YYYY-MM-DD HH:mm:ss Z');
-                var formatted_1 = timenow.format('YYYYMMDDHHmmss');
+                var formatted = timenow.format('YYYYMMDDHHmmss');
                 // console.log(formatted);
 
                 var result = "";
-                var filename = "CandidateRecords"+formatted_1;
+                var filename = "CandidateRecords"+formatted;
                 console.log(filename);
 
                 var stream = fs.createWriteStream(filename);
