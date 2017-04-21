@@ -263,12 +263,11 @@ dialog.matches('SearchCandidate',[
                             });
                             console.log(result);
                             // email.sendemail(result);
-                            stream.write(result);
+                            stream.write(result, function(err) { stream.end(); });
                             
                             session.send('record: %s',result);
                             result = "";
                         });
-                        stream.end();
                 });
 
                 req.on('doneInProc',function(rowCount, more){
