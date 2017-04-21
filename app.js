@@ -52,7 +52,7 @@ dialog.onBegin(function (session, args, next) {
             greeted = 1;
             // args.entities ? args.entities :null;
             // session.send('Begin search for candidates like search java candidates in <location> etc..');
-            session.send('Hi User! How can I help today eg: search for java candidates in <location> etc..');
+            session.send('Hi User! How can I help today');
             
 });
 
@@ -95,7 +95,7 @@ dialog.matches('SearchCandidate',[
         if (greeted===0){
             session.send(msg);
         } 
-        session.send('please wait...I am analyzing your message: \'%s\'', session.message.text);
+        // session.send('How can I help today..:\'%s\'', session.message.text);
 
         var cities = builder.EntityRecognizer.findEntity(args.entities, 'cities');
         var datetime = builder.EntityRecognizer.findEntity(args.entities, 'datetime');
@@ -121,7 +121,7 @@ dialog.matches('SearchCandidate',[
          
         if (!candidateprofile.primarySkill){
             session.sendTyping();
-            builder.Prompts.text(session, 'what primary skill you are looking for?');
+            builder.Prompts.text(session, 'What skill candidates you are looking for?');
         } else {
             next();
         }
@@ -135,7 +135,7 @@ dialog.matches('SearchCandidate',[
 
         if (pskill.primarySkill && !pskill.experienceLevel) {
             session.sendTyping();
-            builder.Prompts.text(session, 'what experience level candidate you are looking for ?');
+            builder.Prompts.text(session, 'OK! what is the level of experience are you looking for');
         } else {
             next();
         }
@@ -152,7 +152,7 @@ dialog.matches('SearchCandidate',[
         }
         if (explevel.experienceLevel && explevel.primarySkill && !explevel.leadtime){
             session.sendTyping();
-            builder.Prompts.text(session, 'when do you need this candidate to start! eg in 1st April 2017 etc..?');
+            builder.Prompts.text(session, 'Thanks! what is the start date! eg in 1st April 2017 etc..?');
         } else {
             next();
         }
@@ -170,7 +170,7 @@ dialog.matches('SearchCandidate',[
 
         if (ltime.experienceLevel && ltime.primarySkill && ltime.leadtime && !ltime.cities){
             session.sendTyping();
-            builder.Prompts.text(session, 'which location candidate is required for?');
+            builder.Prompts.text(session, 'Do you prefer sydney based candidates or specify location');
         } else {
             next();
         }
@@ -308,14 +308,14 @@ dialog.matches('SearchCandidate',[
                                 if (element.value === null){
                                     console.log('NULL');
                                 } else {
-                                    result+= element.value + ",";
+                                    result+= element.value + "||";
                                 }
                             });
                             console.log(result);
                             // email.sendemail(result);
                             stream.write(result, function(err) { stream.end(); });
                             
-                            session.send('record: %s',result);
+                            session.send('[%s]',result);
                             result = "\n";
                         });
                 });
