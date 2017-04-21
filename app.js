@@ -40,11 +40,11 @@ dialog.onBegin(function (session, args, next) {
             .textFormat(builder.TextFormat.xml)
             .attachments([
                 new builder.HeroCard(session)
-                    .title("Welcome to Resource technical Bot")
-                    .subtitle("Smart resource management")
-                    .text("The smart resource management is a intelligent bot for PMs/SAs/TAs or TFS/Scheduler for resource management")
+                    .title("Welcome to Meet Accenture Talent for Engagement (MATE)")
+                    .subtitle("I am a Smart resource management Bot")
+                    .text("The smart resource management Bot is a intelligent bot for PMs/SAs/TAs or TFS/Scheduler for resource management")
                     .images([
-                        builder.CardImage.create(session, "http://www.theoldrobots.com/images26/gakk6.JPG")
+                        builder.CardImage.create(session, "https://thumbs.dreamstime.com/z/teamwork-handle-group-logo-22538327.jpg")
                     ])
                     .tap(builder.CardAction.openUrl(session, "https://en.wikipedia.org/wiki/Space_Needle"))
             ]);
@@ -52,7 +52,8 @@ dialog.onBegin(function (session, args, next) {
             greeted = 1;
             // args.entities ? args.entities :null;
             // session.send('Begin search for candidates like search java candidates in <location> etc..');
-            session.send('Hi Sam! How can I help today');
+            session.send('Hi Sam! How can I help today.. ');
+            session.send('Search for candidates : eg : Search for java Candidates:\'%s\'');
             
 });
 
@@ -95,7 +96,7 @@ dialog.matches('SearchCandidate',[
         if (greeted===0){
             session.send(msg);
         } 
-        session.send('Search for candidates : eg : Search for java Candidates:\'%s\'', session.message.text);
+        //session.send('Search for candidates : eg : Search for java Candidates:\'%s\'', session.message.text);
 
         var cities = builder.EntityRecognizer.findEntity(args.entities, 'cities');
         var datetime = builder.EntityRecognizer.findEntity(args.entities, 'datetime');
