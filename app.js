@@ -207,32 +207,34 @@ dialog.matches('SearchCandidate',[
 
             function executeStatement(){
                 //getting the role ID from demand table
-                // var demquerystring = "SELECT MAX(Role_Id) from Demand"
-                // demroleid =  new Request(demquerystring, function(err, rowCount, rows){
-                //     if (err){
-                //         console.log(err);
-                //     }
-                //     console.log(rowCount + ' rows in Demand');
-                //     console.log(demroleid + 'role ID');
-                //     session.send ('we are at 1 :: %s', rowCount);
-                // });
+                var demquerystring = "SELECT MAX(Role_Id) from dbo.Demand$";
+                console.log("demand query :"+ demquerystring);
+                demroleid =  new Request(demquerystring, function(err, rowCount, rows){
+                    if (err){
+                        console.log(err);
+                    }
+                    console.log(rowCount + ' rows in Demand');
+                    console.log(demroleid + 'role ID');
+                    session.send ('we are at 1 :: %s', rowCount);
+                });
 
-                // demroleid += 1;
+                demroleid += 1;
 
                 // // insert a record in Demand DB
-                // var insertsqlstring ="insert into demand values ("+ demroleid +",null,null,null,"+city.cities+",null"+city.experienceLevel+",null,null,null,null,null,"+city.primarySkill+",null,null,null)";
-                // deminsert =  new Request(insertsqlstring, function(err, rowCount, rows){
-                // if (err){
-                //         console.log(err);
-                // }
-                //     console.log(rowCount + ' in demand table rows');
-                //     console.log(deminsert + 'insert results in demand table');
-                //     session.send ('we are at 2 :: %s', rowCount);
-                // });
+                var insertsqlstring ="insert into demand values ("+ demroleid +",null,null,null,"+city.cities+",null"+city.experienceLevel+",null,null,null,null,null,"+city.primarySkill+",null,null,null)";
+                console.log("demand insert query :"+ insertsqlstring);
+                deminsert =  new Request(insertsqlstring, function(err, rowCount, rows){
+                if (err){
+                        console.log(err);
+                    }
+                    console.log(rowCount + ' in demand table rows');
+                    console.log(deminsert + 'insert results in demand table');
+                    session.send ('we are at 2 :: %s', rowCount);
+                });
 
                 // Query the employee table with skill , location
-                var querysqlstring = "SELECT e.PersonalID,e.Employment_Status, e.Career_Track, e.Talent_Segment, e.Standard_Job FROM dbo.Skill$ s, dbo.Employee$ e where lower(s.Skill) like '%"+city.primarySkill+"%' and s.Experience ="+city.experienceLevel+" and e.Metro_City ='"+city.cities+"' and s.PersonalID = e.PersonalID";
-                console.log(querysqlstring +': The query u want to send to DB')
+                var querysqlstring = "SELECT top 10 e.PersonalID,e.Employment_Status, e.Career_Track, e.Talent_Segment, e.Standard_Job FROM dbo.Skill$ s, dbo.Employee$ e where lower(s.Skill) like '%"+city.primarySkill+"%' and s.Experience ="+city.experienceLevel+" and e.Metro_City ='"+city.cities+"' and s.PersonalID = e.PersonalID";
+                console.log(querysqlstring +': The query u want to send to DB');
                 req = new Request(querysqlstring, function(err, rowCount, rows){
                     if (err){
                         console.log(err);
@@ -258,7 +260,7 @@ dialog.matches('SearchCandidate',[
                                 if (element.value === null){
                                     console.log('NULL');
                                 } else {
-                                    result+= element.value + " ";
+                                    result+= element.value + ",";
                                 }
                             });
                             console.log(result);
@@ -266,7 +268,7 @@ dialog.matches('SearchCandidate',[
                             stream.write(result, function(err) { stream.end(); });
                             
                             session.send('record: %s',result);
-                            result = "";
+                            result = "\n";
                         });
                 });
 
