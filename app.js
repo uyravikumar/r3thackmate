@@ -27,7 +27,7 @@ var bot = new builder.UniversalBot(connector);
 server.post('/api/messages', connector.listen());
 
 //create LUIS recognizer that points at our model and add it as a root '/' dialog
-var model = 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/a4140058-f613-4a34-bab0-a90a6e088f86?subscription-key=8a6d7ac6787c4537aab3095d94985a35&verbose=true&timezoneOffset=0.0&q=';
+var model = 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/b23f5c98-8066-4fbe-b512-0c1e3d19f983?subscription-key=8a6d7ac6787c4537aab3095d94985a35&verbose=true&timezoneOffset=0.0&q=';
 var recognizer = new builder.LuisRecognizer(model);
 var dialog = new builder.IntentDialog({ recognizers: [recognizer]});
 bot.dialog('/', dialog);
@@ -52,7 +52,7 @@ dialog.onBegin(function (session, args, next) {
             greeted = 1;
             // args.entities ? args.entities :null;
             // session.send('Begin search for candidates like search java candidates in <location> etc..');
-            session.send('Hi User! How can I help today');
+            session.send('Hi Sam! How can I help today');
             
 });
 
@@ -95,7 +95,7 @@ dialog.matches('SearchCandidate',[
         if (greeted===0){
             session.send(msg);
         } 
-        // session.send('How can I help today..:\'%s\'', session.message.text);
+        session.send('Search for candidates : eg : Search for java Candidates:\'%s\'', session.message.text);
 
         var cities = builder.EntityRecognizer.findEntity(args.entities, 'cities');
         var datetime = builder.EntityRecognizer.findEntity(args.entities, 'datetime');
