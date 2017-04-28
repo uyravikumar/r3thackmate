@@ -1,5 +1,6 @@
 var restify = require('restify');
 var builder = require('botbuilder');
+var ConnectionPool = require('tedious-connection-pool');
 var Request = require('tedious').Request;
 var Types = require('tedious').TYPES;
 var email = require('./sendemail');
@@ -25,6 +26,14 @@ var connector = new builder.ChatConnector({
 });
 var bot = new builder.UniversalBot(connector);
 server.post('/api/messages', connector.listen());
+
+// connection pool config
+var poolConfig = {
+    min: 2,
+    max: 4,
+    log: true
+};
+
 
 //create LUIS recognizer that points at our model and add it as a root '/' dialog
 var model = 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/b23f5c98-8066-4fbe-b512-0c1e3d19f983?subscription-key=8a6d7ac6787c4537aab3095d94985a35&verbose=true&timezoneOffset=0.0&q=';
@@ -185,126 +194,131 @@ dialog.matches('SearchCandidate',[
         if (city.experienceLevel && city.primarySkill && city.leadtime && city.cities){
             city.address = session.message.address;
             console.log("Initiate database connection");
-            var Connection = require('tedious').Connection;  
+
+            // var connection = require('tedious-connection-pool').PooledConnection;  
+            var connection = require('tedious').Connection; 
             var config = {
-                userName: 'superuser@r3taihack.database.windows.net',
-                password: 'Pms2Secure2017',
-                server: 'r3taihack.database.windows.net',
+                userName: 'root12345@candidatesearch.database.windows.net',
+                password: 'admin1234$$',
+                server: 'candidatesearch.database.windows.net',
                 options: {
                     encrypt: true, 
-                    database: 'r3taihack', 
+                    database: 'employer', 
                     rowCollectionOnRequestCompletion: true
                 }
             };
-            var connection = new Connection(config);
-            connection.on('connect', function(err){
-                if (err){
-                    console.log('error in connecting ' + err);
-                    return;
-                }
-                session.send('search for candidates in %s to be available on ::%s', city.cities, city.leadtime);
-                //executeDemandstatement();
-                //executeDemandinsert();
-                executeStatement();
+            pool = new ConnectionPool(poolConfig, config);
+
+            pool.on('error', function(err) {
+                 console.error(err);
             });
+
+            session.send('search for candidates in %s to be available on ::%s', city.cities, city.leadtime);
+            // var deamndrowcount = 0;
+            // var totalrowcount = 0;
+            // executeDemandstatement();
+            //executeDemandinsert();
+            executeStatement(session);
+            executerowcountStatement(session);        
+           
+         }
+
+    }
+]);           
             
-            var deamndrowcount = 0;
-            var totalrowcount = 0;
 
-            function executeDemandstatement(){
-                var demquerystring = "SELECT max(Role_Id) from dbo.Demand$";
-                console.log("Demand query :"+ demquerystring);
-                demroleid =  new Request(demquerystring, function(err, rowCount, rows){
+            function executeStatement(session){
+
+                pool.acquire(function(err, connection){
                     if (err){
-                        console.log(err);
+                        console.log('error in connecting ' + err);
+                        return;
                     }
-                    console.log(rowCount + ' rows in Demand');
-                    // console.log(demroleid + ' role ID');
-                    // session.send ('we are at 1 :: %s', rowCount);
-                    
-                });
-                var result = "";
-                demroleid.on('row', function(columns) {
-                    console.log('row in select of demand');
-                    columns.forEach(function(column) {
-                    if (column.value === null) {
-                        console.log('NULL');
-                    } else {
-                        result+= column.value + " ";
-                    }
-                    });
-                    console.log(result);
-                    totalrowcount=result;
-                    console.log("total number of rows in demand:"+totalrowcount);
-                    result ="";
-                });
-                demroleid.on('doneInProc', function(rowCount, more) {
-                    console.log(rowCount + ' rows returned');
-                
-                });
-                connection.execSql(demroleid);
-            }
-
-            function executeDemandinsert(){
-                // insert a record in Demand DB
-                totalrowcount += 1;
-                var insertsqlstring ="insert into dbo.Demand$ values ("+totalrowcount+",null,null,null,"+city.cities+",null,"+city.experienceLevel+",null,null,null,null,null,"+city.primarySkill+",null,null,null)";
-                console.log("demand insert query :"+ insertsqlstring);
-                deminsert =  new Request(insertsqlstring, function(err, rowCount, rows){
-                if (err){
-                        console.log(err);
-                    }
-                    console.log(rowCount + ' in demand table rows');
-                    // console.log(deminsert + 'insert results in demand table');
-                    // session.send ('we are at 2 :: %s', rowCount);
-                });
-                var result = "";
-                deminsert.on('row', function(columns) {
-                    console.log('row in insert');
-                    columns.forEach(function(column) {
-                    if (column.value === null) {
-                        console.log('NULL');
-                    } else {
-                        result+= column.value + " ";
-                    }
-                    });
-                    console.log(result);
-                    totalrowcount=result;
-                    result ="";
-                });
-                deminsert.on('doneInProc', function(rowCount, more) {
-                    console.log(rowCount + ' rows returned');
-                
-                });
-                connection.execSql(deminsert);
-            }
-
-            function executeStatement(){
  
-                // Query the employee table with skill , location
-                var querysqlstring = "SELECT top 10 e.PersonalID,e.Employment_Status, e.Career_Track, e.Talent_Segment, e.Standard_Job FROM dbo.Skill$ s, dbo.Employee$ e where lower(s.Skill) like '%"+city.primarySkill+"%' and s.Experience ="+city.experienceLevel+" and e.Metro_City ='"+city.cities+"' and s.PersonalID = e.PersonalID";
-                console.log(querysqlstring +': The query u want to send to DB');
-                req = new Request(querysqlstring, function(err, rowCount, rows){
+                        // Query the employee table with skill , location
+                        // var querysqlstring = "SELECT top 10 e.PersonalID,e.Employment_Status, e.Career_Track, e.Talent_Segment, e.Standard_Job FROM dbo.Skill$ s, dbo.Employee$ e where lower(s.Skill) like '%"+city.primarySkill+"%' and s.Experience ="+city.experienceLevel+" and e.Metro_City ='"+city.cities+"' and s.PersonalID = e.PersonalID";
+                        var querysqlstring = "SELECT * FROM dbo.Employees";
+                        
+                        console.log(querysqlstring +': The query u want to send to DB');
+                        req = new Request(querysqlstring, function(err, rowCount, rows){
+                            if (err){
+                                console.log(err);
+                            }
+                            connection.release();
+                            console.log(rowCount + ' rows in employee and skill table');
+                            // session.send ('we are at 3 :: %s', rowCount);
+                        });
+
+                        var timenow = moment();
+                        // var formatted = timenow.format('YYYY-MM-DD HH:mm:ss Z');
+                        var formatted = timenow.format('YYYYMMDDHHmmss');
+                        // console.log(formatted);
+
+                        var result = "";
+                        var filename = "CandidateRecords"+formatted;
+                        console.log(filename);
+
+                        var stream = fs.createWriteStream(filename);
+                        stream.once('open', function(fd) {
+
+                            req.on('row',function(columns){
+                                    columns.forEach(function(element) {
+                                        if (element.value === null){
+                                            console.log('NULL');
+                                        } else {
+                                            result+= element.value + " || ";
+                                        }
+                                    });
+                                    console.log(result);
+                                    // email.sendemail(result);
+                                    stream.write(result, function(err) { stream.end(); });
+                                    session.send('[%s]',result);
+                                    result = "\n";
+                                });
+                        });
+
+                        req.on('doneInProc',function(rowCount, more){
+
+                            console.log(rowCount + ' rows returned');
+                            // if row count is 0 , ask option to raise RRD
+                            // If row count is 
+
+                        });
+
+                        connection.execSql(req);
+                    
+                    });
+             
+            }
+            
+
+            // Function to get row count
+
+            function executerowcountStatement(session){
+
+                pool.acquire(function(err, connection){
                     if (err){
-                        console.log(err);
+                        console.log('error in connecting ' + err);
+                        return;
                     }
-                    console.log(rowCount + ' rows in employee and skill table');
-                    // session.send ('we are at 3 :: %s', rowCount);
-                });
+ 
+                        // Query the employee table with skill , location
+                        // var querysqlstring = "SELECT top 10 e.PersonalID,e.Employment_Status, e.Career_Track, e.Talent_Segment, e.Standard_Job FROM dbo.Skill$ s, dbo.Employee$ e where lower(s.Skill) like '%"+city.primarySkill+"%' and s.Experience ="+city.experienceLevel+" and e.Metro_City ='"+city.cities+"' and s.PersonalID = e.PersonalID";
+                        var querysqlstring = "SELECT count(*) FROM dbo.Employees";
+                        
+                        console.log(querysqlstring +': The query u want to send to DB');
+                        rowcounter = new Request(querysqlstring, function(err, rowCount, rows){
+                            if (err){
+                                console.log(err);
+                            }
+                            connection.release();
+                            console.log(rowCount + ' rows in employee and skill table');
+                            // session.send ('we are at 3 :: %s', rowCount);
+                        });
 
-                var timenow = moment();
-                // var formatted = timenow.format('YYYY-MM-DD HH:mm:ss Z');
-                var formatted = timenow.format('YYYYMMDDHHmmss');
-                // console.log(formatted);
-
-                var result = "";
-                var filename = "CandidateRecords"+formatted;
-                console.log(filename);
-
-                var stream = fs.createWriteStream(filename);
-                stream.once('open', function(fd) {
-
-                       req.on('row',function(columns){
+                        var result = "";
+                        
+                        rowcounter.on('row',function(columns){
                             columns.forEach(function(element) {
                                 if (element.value === null){
                                     console.log('NULL');
@@ -313,30 +327,25 @@ dialog.matches('SearchCandidate',[
                                 }
                             });
                             console.log(result);
-                            // email.sendemail(result);
-                            stream.write(result, function(err) { stream.end(); });
-                            
                             session.send('[%s]',result);
                             result = "\n";
+                            
                         });
-                });
 
-                req.on('doneInProc',function(rowCount, more){
+                        rowcounter.on('doneInProc',function(rowCount, more){
 
-                    console.log(rowCount + ' rows returned');
-                    // if row count is 0 , ask option to raise RRD
-                    // If row count is 
+                            console.log(rowCount + ' rows returned');
+                            // if row count is 0 , ask option to raise RRD
+                            // If row count is 
 
-                });
-                connection.execSql(req);
-            
+                        });
+
+                        connection.execSql(rowcounter);
+                    
+                    });
+             
             }
        
-        }
-
-    }
-]);
-
 dialog.matches('EmailCandidate', [
     function(session, args, next){
         session.send('Thanks for using the service. try searching resources any time: \'%s\'', session.message.text);
