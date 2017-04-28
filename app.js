@@ -1,5 +1,9 @@
+require('dotenv-extended').load();
+
 var restify = require('restify');
 var builder = require('botbuilder');
+var needle = require ('needle');
+var url = require('url');
 var ConnectionPool = require('tedious-connection-pool');
 var Request = require('tedious').Request;
 var Types = require('tedious').TYPES;
@@ -7,6 +11,7 @@ var email = require('./sendemail');
 var chalk = require('chalk');
 var fs = require('fs');
 var moment = require('moment');
+var speechService = require('./speech-service.js');
 
 //=========================================================
 // Bot Setup
@@ -24,8 +29,86 @@ var connector = new builder.ChatConnector({
     appId: 'c734e282-f433-4e96-bee0-1fdd51f9f343',
     appPassword: 'r36uO6vxkfyxJy6kinY4Nkq'
 });
-var bot = new builder.UniversalBot(connector);
+
 server.post('/api/messages', connector.listen());
+
+var bot = new builder.UniversalBot(connector, function(session) {
+    if (hasAudioAttachment(session)){
+        var audiostream = getAudioStreamFromMessage(session.message);
+        speechService.getTextFromAudioStream(audiostream)
+            .then (function (text){
+                session.send(processText(text));
+            })
+            .catch(function(err){
+                session.send('Oops something went wrong try again later !');
+                console.log(err);
+
+            });
+    } else {
+        session.send('try sending the audio file')
+    }
+
+});
+
+function hasAudioAttachment (session){
+    return session.message.attachments.length > 0 && 
+        (session.message.attachment[0].contentType === 'audio/wav' ||
+            session.message.attachment[0].contentType === 'application/octet-stream')
+}
+
+function getAudioStreamFromMessage (message){
+    var header = {};
+    var attachment = message.attachment[0];
+    if (checkRequiresToken(message)) {
+        connector.getAccessToken(function(error, token){
+            var tok = token;
+            headers['Authorization']='Bearer' + token;
+            headers['Content-Type'] ='application/octet-stream';
+
+            return needle.get(attachment.contenturl, {headers : headers});
+        });
+    }
+    headers['Content-Type'] = attachment.contentType;
+    return needle.get(attachment.contenturl, {headers : headers});
+}
+
+function checkRequiresToken(message) {
+    return message.source === 'skype' || message.source === 'msteams';
+}
+
+function processText(text) {
+    var result = 'You said: ' + text + '.';
+
+    if (text && text.length > 0) {
+        var wordCount = text.split(' ').filter(function (x) { return x; }).length;
+        result += '\n\nWord Count: ' + wordCount;
+
+        var characterCount = text.replace(/ /g, '').length;
+        result += '\n\nCharacter Count: ' + characterCount;
+
+        var spaceCount = text.split(' ').length - 1;
+        result += '\n\nSpace Count: ' + spaceCount;
+
+        var m = text.match(/[aeiou]/gi);
+        var vowelCount = m === null ? 0 : m.length;
+        result += '\n\nVowel Count: ' + vowelCount;
+    }
+
+    return result;
+}
+
+bot.on('conversationUpdate', function (message) {
+    if (message.membersAdded) {
+        message.membersAdded.forEach(function (identity) {
+            if (identity.id === message.address.bot.id) {
+                var reply = new builder.Message()
+                    .address(message.address)
+                    .text('Hi! I am SpeechToText Bot. I can understand the content of any audio and convert it to text. Try sending me a wav file.');
+                bot.send(reply);
+            }
+        });
+    }
+});
 
 // connection pool config
 var poolConfig = {
@@ -39,7 +122,7 @@ var poolConfig = {
 var model = 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/b23f5c98-8066-4fbe-b512-0c1e3d19f983?subscription-key=8a6d7ac6787c4537aab3095d94985a35&verbose=true&timezoneOffset=0.0&q=';
 var recognizer = new builder.LuisRecognizer(model);
 var dialog = new builder.IntentDialog({ recognizers: [recognizer]});
-bot.dialog('/', dialog);
+// bot.dialog('/', dialog);
 
 var msg = " ";
 var greeted = 0;
