@@ -67,8 +67,8 @@ function hasAudioAttachment(session) {
 // }
 
 function getAudioStreamFromMessage (message){
-    var header = {};
-    var attachment = message.attachment[0];
+    var headers = {};
+    var attachment = message.attachments[0];
     if (checkRequiresToken(message)) {
         connector.getAccessToken(function(error, token){
             var tok = token;
