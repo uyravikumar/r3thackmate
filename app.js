@@ -72,7 +72,7 @@ function getAudioStreamFromMessage (message){
     if (checkRequiresToken(message)) {
         connector.getAccessToken(function(error, token){
             var tok = token;
-            headers['Authorization']='Bearer' + token;
+            headers['Authorization']='Bearer ' + token;
             headers['Content-Type'] ='application/octet-stream';
 
             return needle.get(attachment.contentUrl, {headers : headers});
