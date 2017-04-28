@@ -50,11 +50,21 @@ var bot = new builder.UniversalBot(connector, function(session) {
 
 });
 
-function hasAudioAttachment (session){
-    return session.message.attachments.length > 0 && 
-        (session.message.attachment[0].contentType === 'audio/wav' ||
-            session.message.attachment[0].contentType === 'application/octet-stream')
+//=========================================================
+// Utilities
+//=========================================================
+function hasAudioAttachment(session) {
+    return session.message.attachments.length > 0 &&
+        (session.message.attachments[0].contentType === 'audio/wav' ||
+            session.message.attachments[0].contentType === 'application/octet-stream');
 }
+
+
+// function hasAudioAttachment (session){
+//     return session.message.attachments.length > 0 && 
+//         (session.message.attachment[0].contentType === 'audio/wav' ||
+//             session.message.attachment[0].contentType === 'application/octet-stream')
+// }
 
 function getAudioStreamFromMessage (message){
     var header = {};
