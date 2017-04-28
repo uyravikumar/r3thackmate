@@ -32,6 +32,22 @@ var connector = new builder.ChatConnector({
 
 server.post('/api/messages', connector.listen());
 
+// connection pool config
+var poolConfig = {
+    min: 2,
+    max: 4,
+    log: true
+};
+
+
+//create LUIS recognizer that points at our model and add it as a root '/' dialog
+var model = 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/b23f5c98-8066-4fbe-b512-0c1e3d19f983?subscription-key=8a6d7ac6787c4537aab3095d94985a35&verbose=true&timezoneOffset=0.0&q=';
+var recognizer = new builder.LuisRecognizer(model);
+var dialog = new builder.IntentDialog({ recognizers: [recognizer]});
+
+var msg = " ";
+var greeted = 0;
+
 var bot = new builder.UniversalBot(connector, function(session) {
     if (hasAudioAttachment(session)){
         var audiostream = getAudioStreamFromMessage(session.message);
@@ -45,7 +61,8 @@ var bot = new builder.UniversalBot(connector, function(session) {
 
             });
     } else {
-        session.send('try sending the audio file')
+        session.send('try sending the audio file or text file');
+        bot.dialog('/', dialog);
     }
 
 });
@@ -106,55 +123,49 @@ bot.on('conversationUpdate', function (message) {
     if (message.membersAdded) {
         message.membersAdded.forEach(function (identity) {
             if (identity.id === message.address.bot.id) {
-                var reply = new builder.Message()
-                    .address(message.address)
-                    .text('Hi! I am SpeechToText Bot. I can understand the content of any audio and convert it to text. Try sending me a wav file.');
-                bot.send(reply);
+                // var reply = new builder.Message()
+                //     .address(message.address)
+                //     .text('Hi! I am SpeechToText Bot. I can understand the content of any audio and convert it to text. Try sending me a wav file.');
+                // bot.send(reply);
+                msg = new builder.Message(session)
+                        .textFormat(builder.TextFormat.xml)
+                        .attachments([
+                                new builder.HeroCard(session)
+                        .title("Welcome to Meet Accenture Talent for Engagement (MATE)")
+                        .subtitle("I am a Smart resource management Bot")
+                        .text("The smart resource management Bot is a intelligent bot for PMs/SAs/TAs or TFS/Scheduler for resource management")
+                        .images([
+                            builder.CardImage.create(session, "https://thumbs.dreamstime.com/z/teamwork-handle-group-logo-22538327.jpg")
+                        ])
+                        .tap(builder.CardAction.openUrl(session, "https://en.wikipedia.org/wiki/Space_Needle"))
+                ]);
+                session.send(msg);
             }
         });
     }
 });
 
-// connection pool config
-var poolConfig = {
-    min: 2,
-    max: 4,
-    log: true
-};
-
-
-//create LUIS recognizer that points at our model and add it as a root '/' dialog
-var model = 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/b23f5c98-8066-4fbe-b512-0c1e3d19f983?subscription-key=8a6d7ac6787c4537aab3095d94985a35&verbose=true&timezoneOffset=0.0&q=';
-var recognizer = new builder.LuisRecognizer(model);
-var dialog = new builder.IntentDialog({ recognizers: [recognizer]});
-bot.dialog('/', dialog);
-
-var msg = " ";
-var greeted = 0;
-
-dialog.onBegin(function (session, args, next) {
-            msg = new builder.Message(session)
-            .textFormat(builder.TextFormat.xml)
-            .attachments([
-                new builder.HeroCard(session)
-                    .title("Welcome to Meet Accenture Talent for Engagement (MATE)")
-                    .subtitle("I am a Smart resource management Bot")
-                    .text("The smart resource management Bot is a intelligent bot for PMs/SAs/TAs or TFS/Scheduler for resource management")
-                    .images([
-                        builder.CardImage.create(session, "https://thumbs.dreamstime.com/z/teamwork-handle-group-logo-22538327.jpg")
-                    ])
-                    .tap(builder.CardAction.openUrl(session, "https://en.wikipedia.org/wiki/Space_Needle"))
-            ]);
-            session.send(msg);
-            greeted = 1;
-            // args.entities ? args.entities :null;
-            // session.send('Begin search for candidates like search java candidates in <location> etc..');
-            session.send('Hi Sam! How can I help today.. ');
-            session.send('Candidates search : eg : I am searching for candidates with Hadoop skiils:');
+// dialog.onBegin(function (session, args, next) {
+//             msg = new builder.Message(session)
+//             .textFormat(builder.TextFormat.xml)
+//             .attachments([
+//                 new builder.HeroCard(session)
+//                     .title("Welcome to Meet Accenture Talent for Engagement (MATE)")
+//                     .subtitle("I am a Smart resource management Bot")
+//                     .text("The smart resource management Bot is a intelligent bot for PMs/SAs/TAs or TFS/Scheduler for resource management")
+//                     .images([
+//                         builder.CardImage.create(session, "https://thumbs.dreamstime.com/z/teamwork-handle-group-logo-22538327.jpg")
+//                     ])
+//                     .tap(builder.CardAction.openUrl(session, "https://en.wikipedia.org/wiki/Space_Needle"))
+//             ]);
+//             session.send(msg);
+//             greeted = 1;
+//             // args.entities ? args.entities :null;
+//             // session.send('Begin search for candidates like search java candidates in <location> etc..');
+//             session.send('Hi Sam! How can I help today.. ');
+//             session.send('Candidates search : eg : I am searching for candidates with Hadoop skiils:');
             
-});
-
-
+// });
 
 // dialog.onBegin(builder.DialogAction.send("I can search candidates."));
 
