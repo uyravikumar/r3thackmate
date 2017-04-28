@@ -59,19 +59,14 @@ function hasAudioAttachment(session) {
             session.message.attachments[0].contentType === 'application/octet-stream');
 }
 
-
-// function hasAudioAttachment (session){
-//     return session.message.attachments.length > 0 && 
-//         (session.message.attachment[0].contentType === 'audio/wav' ||
-//             session.message.attachment[0].contentType === 'application/octet-stream')
-// }
-
 function getAudioStreamFromMessage (message){
     var headers = {};
     var attachment = message.attachments[0];
+
     if (checkRequiresToken(message)) {
+
         connector.getAccessToken(function(error, token){
-            var tok = token;
+           
             headers['Authorization']='Bearer ' + token;
             headers['Content-Type'] ='application/octet-stream';
 
@@ -132,7 +127,7 @@ var poolConfig = {
 var model = 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/b23f5c98-8066-4fbe-b512-0c1e3d19f983?subscription-key=8a6d7ac6787c4537aab3095d94985a35&verbose=true&timezoneOffset=0.0&q=';
 var recognizer = new builder.LuisRecognizer(model);
 var dialog = new builder.IntentDialog({ recognizers: [recognizer]});
-// bot.dialog('/', dialog);
+bot.dialog('/', dialog);
 
 var msg = " ";
 var greeted = 0;
