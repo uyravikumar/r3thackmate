@@ -75,11 +75,11 @@ function getAudioStreamFromMessage (message){
             headers['Authorization']='Bearer' + token;
             headers['Content-Type'] ='application/octet-stream';
 
-            return needle.get(attachment.contenturl, {headers : headers});
+            return needle.get(attachment.contentUrl, {headers : headers});
         });
     }
     headers['Content-Type'] = attachment.contentType;
-    return needle.get(attachment.contenturl, {headers : headers});
+    return needle.get(attachment.contentUrl, {headers : headers});
 }
 
 function checkRequiresToken(message) {
