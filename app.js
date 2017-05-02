@@ -195,7 +195,7 @@ dialog.matches('SearchCandidate',[
                 server: 'r3taihack.database.windows.net',
                 options: {
                     encrypt: true, 
-                    database: 'r3taihackmate', 
+                    database: 'r3thackmate', 
                     rowCollectionOnRequestCompletion: true
                 }
             };
