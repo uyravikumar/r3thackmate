@@ -1,17 +1,11 @@
-require('dotenv-extended').load();
-
 var restify = require('restify');
 var builder = require('botbuilder');
-var needle = require ('needle');
-var url = require('url');
-var ConnectionPool = require('tedious-connection-pool');
 var Request = require('tedious').Request;
 var Types = require('tedious').TYPES;
 var email = require('./sendemail');
 var chalk = require('chalk');
 var fs = require('fs');
 var moment = require('moment');
-var speechService = require('./speech-service.js');
 
 //=========================================================
 // Bot Setup
@@ -29,143 +23,41 @@ var connector = new builder.ChatConnector({
     appId: 'c734e282-f433-4e96-bee0-1fdd51f9f343',
     appPassword: 'r36uO6vxkfyxJy6kinY4Nkq'
 });
-
+var bot = new builder.UniversalBot(connector);
 server.post('/api/messages', connector.listen());
-
-// connection pool config
-var poolConfig = {
-    min: 2,
-    max: 4,
-    log: true
-};
-
 
 //create LUIS recognizer that points at our model and add it as a root '/' dialog
 var model = 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/b23f5c98-8066-4fbe-b512-0c1e3d19f983?subscription-key=8a6d7ac6787c4537aab3095d94985a35&verbose=true&timezoneOffset=0.0&q=';
 var recognizer = new builder.LuisRecognizer(model);
 var dialog = new builder.IntentDialog({ recognizers: [recognizer]});
+bot.dialog('/', dialog);
 
 var msg = " ";
 var greeted = 0;
 
-var bot = new builder.UniversalBot(connector, function(session) {
-    if (hasAudioAttachment(session)){
-        var audiostream = getAudioStreamFromMessage(session.message);
-        speechService.getTextFromAudioStream(audiostream)
-            .then (function (text){
-                session.send(processText(text));
-            })
-            .catch(function(err){
-                session.send('Oops something went wrong try again later !');
-                console.log(err);
-
-            });
-    } else {
-        session.send('try sending the audio file or text file');
-        bot.dialog('/', dialog);
-    }
-
-});
-
-//=========================================================
-// Utilities
-//=========================================================
-function hasAudioAttachment(session) {
-    return session.message.attachments.length > 0 &&
-        (session.message.attachments[0].contentType === 'audio/wav' ||
-            session.message.attachments[0].contentType === 'application/octet-stream');
-}
-
-function getAudioStreamFromMessage (message){
-    var headers = {};
-    var attachment = message.attachments[0];
-
-    if (checkRequiresToken(message)) {
-
-        connector.getAccessToken(function(error, token){
-           
-            headers['Authorization']='Bearer ' + token;
-            headers['Content-Type'] ='application/octet-stream';
-
-            return needle.get(attachment.contentUrl, {headers : headers});
-        });
-    }
-    headers['Content-Type'] = attachment.contentType;
-    return needle.get(attachment.contentUrl, {headers : headers});
-}
-
-function checkRequiresToken(message) {
-    return message.source === 'skype' || message.source === 'msteams';
-}
-
-function processText(text) {
-    var result = 'You said: ' + text + '.';
-
-    if (text && text.length > 0) {
-        var wordCount = text.split(' ').filter(function (x) { return x; }).length;
-        result += '\n\nWord Count: ' + wordCount;
-
-        var characterCount = text.replace(/ /g, '').length;
-        result += '\n\nCharacter Count: ' + characterCount;
-
-        var spaceCount = text.split(' ').length - 1;
-        result += '\n\nSpace Count: ' + spaceCount;
-
-        var m = text.match(/[aeiou]/gi);
-        var vowelCount = m === null ? 0 : m.length;
-        result += '\n\nVowel Count: ' + vowelCount;
-    }
-
-    return result;
-}
-
-bot.on('conversationUpdate', function (message) {
-    if (message.membersAdded) {
-        message.membersAdded.forEach(function (identity) {
-            if (identity.id === message.address.bot.id) {
-                // var reply = new builder.Message()
-                //     .address(message.address)
-                //     .text('Hi! I am SpeechToText Bot. I can understand the content of any audio and convert it to text. Try sending me a wav file.');
-                // bot.send(reply);
-                msg = new builder.Message(session)
-                        .textFormat(builder.TextFormat.xml)
-                        .attachments([
-                                new builder.HeroCard(session)
-                        .title("Welcome to Meet Accenture Talent for Engagement (MATE)")
-                        .subtitle("I am a Smart resource management Bot")
-                        .text("The smart resource management Bot is a intelligent bot for PMs/SAs/TAs or TFS/Scheduler for resource management")
-                        .images([
-                            builder.CardImage.create(session, "https://thumbs.dreamstime.com/z/teamwork-handle-group-logo-22538327.jpg")
-                        ])
-                        .tap(builder.CardAction.openUrl(session, "https://en.wikipedia.org/wiki/Space_Needle"))
-                ]);
-                session.send(msg);
-            }
-        });
-    }
-});
-
-// dialog.onBegin(function (session, args, next) {
-//             msg = new builder.Message(session)
-//             .textFormat(builder.TextFormat.xml)
-//             .attachments([
-//                 new builder.HeroCard(session)
-//                     .title("Welcome to Meet Accenture Talent for Engagement (MATE)")
-//                     .subtitle("I am a Smart resource management Bot")
-//                     .text("The smart resource management Bot is a intelligent bot for PMs/SAs/TAs or TFS/Scheduler for resource management")
-//                     .images([
-//                         builder.CardImage.create(session, "https://thumbs.dreamstime.com/z/teamwork-handle-group-logo-22538327.jpg")
-//                     ])
-//                     .tap(builder.CardAction.openUrl(session, "https://en.wikipedia.org/wiki/Space_Needle"))
-//             ]);
-//             session.send(msg);
-//             greeted = 1;
-//             // args.entities ? args.entities :null;
-//             // session.send('Begin search for candidates like search java candidates in <location> etc..');
-//             session.send('Hi Sam! How can I help today.. ');
-//             session.send('Candidates search : eg : I am searching for candidates with Hadoop skiils:');
+dialog.onBegin(function (session, args, next) {
+            msg = new builder.Message(session)
+            .textFormat(builder.TextFormat.xml)
+            .attachments([
+                new builder.HeroCard(session)
+                    .title("Welcome to Meet Accenture Talent for Engagement (MATE)")
+                    .subtitle("I am a Smart resource management Bot")
+                    .text("The smart resource management Bot is a intelligent bot for PMs/SAs/TAs or TFS/Scheduler for resource management")
+                    .images([
+                        builder.CardImage.create(session, "https://thumbs.dreamstime.com/z/teamwork-handle-group-logo-22538327.jpg")
+                    ])
+                    .tap(builder.CardAction.openUrl(session, "https://en.wikipedia.org/wiki/Space_Needle"))
+            ]);
+            session.send(msg);
+            greeted = 1;
+            // args.entities ? args.entities :null;
+            // session.send('Begin search for candidates like search java candidates in <location> etc..');
+            session.send('Hi Sam! How can I help today.. ');
+            session.send('Candidates search : eg : I am searching for candidates with Hadoop skiils:');
             
-// });
+});
+
+
 
 // dialog.onBegin(builder.DialogAction.send("I can search candidates."));
 
@@ -293,131 +185,126 @@ dialog.matches('SearchCandidate',[
         if (city.experienceLevel && city.primarySkill && city.leadtime && city.cities){
             city.address = session.message.address;
             console.log("Initiate database connection");
-
-            // var connection = require('tedious-connection-pool').PooledConnection;  
-            var connection = require('tedious').Connection; 
+            var Connection = require('tedious').Connection;  
             var config = {
-                userName: 'root12345@candidatesearch.database.windows.net',
-                password: 'admin1234$$',
-                server: 'candidatesearch.database.windows.net',
+                userName: 'superuser@r3taihack.database.windows.net',
+                password: 'Pms2Secure2017',
+                server: 'r3taihack.database.windows.net',
                 options: {
                     encrypt: true, 
-                    database: 'employer', 
+                    database: 'r3taihackmate', 
                     rowCollectionOnRequestCompletion: true
                 }
             };
-            pool = new ConnectionPool(poolConfig, config);
-
-            pool.on('error', function(err) {
-                 console.error(err);
+            var connection = new Connection(config);
+            connection.on('connect', function(err){
+                if (err){
+                    console.log('error in connecting ' + err);
+                    return;
+                }
+                session.send('search for candidates in %s to be available on ::%s', city.cities, city.leadtime);
+                //executeDemandstatement();
+                //executeDemandinsert();
+                executeStatement();
             });
-
-            session.send('search for candidates in %s to be available on ::%s', city.cities, city.leadtime);
-            // var deamndrowcount = 0;
-            // var totalrowcount = 0;
-            // executeDemandstatement();
-            //executeDemandinsert();
-            executeStatement(session);
-            executerowcountStatement(session);        
-           
-         }
-
-    }
-]);           
             
+            var deamndrowcount = 0;
+            var totalrowcount = 0;
 
-            function executeStatement(session){
-
-                pool.acquire(function(err, connection){
+            function executeDemandstatement(){
+                var demquerystring = "SELECT max(Role_Id) from dbo.Demand$";
+                console.log("Demand query :"+ demquerystring);
+                demroleid =  new Request(demquerystring, function(err, rowCount, rows){
                     if (err){
-                        console.log('error in connecting ' + err);
-                        return;
+                        console.log(err);
                     }
- 
-                        // Query the employee table with skill , location
-                        // var querysqlstring = "SELECT top 10 e.PersonalID,e.Employment_Status, e.Career_Track, e.Talent_Segment, e.Standard_Job FROM dbo.Skill$ s, dbo.Employee$ e where lower(s.Skill) like '%"+city.primarySkill+"%' and s.Experience ="+city.experienceLevel+" and e.Metro_City ='"+city.cities+"' and s.PersonalID = e.PersonalID";
-                        var querysqlstring = "SELECT * FROM dbo.Employees";
-                        
-                        console.log(querysqlstring +': The query u want to send to DB');
-                        req = new Request(querysqlstring, function(err, rowCount, rows){
-                            if (err){
-                                console.log(err);
-                            }
-                            connection.release();
-                            console.log(rowCount + ' rows in employee and skill table');
-                            // session.send ('we are at 3 :: %s', rowCount);
-                        });
-
-                        var timenow = moment();
-                        // var formatted = timenow.format('YYYY-MM-DD HH:mm:ss Z');
-                        var formatted = timenow.format('YYYYMMDDHHmmss');
-                        // console.log(formatted);
-
-                        var result = "";
-                        var filename = "CandidateRecords"+formatted;
-                        console.log(filename);
-
-                        var stream = fs.createWriteStream(filename);
-                        stream.once('open', function(fd) {
-
-                            req.on('row',function(columns){
-                                    columns.forEach(function(element) {
-                                        if (element.value === null){
-                                            console.log('NULL');
-                                        } else {
-                                            result+= element.value + " || ";
-                                        }
-                                    });
-                                    console.log(result);
-                                    // email.sendemail(result);
-                                    stream.write(result, function(err) { stream.end(); });
-                                    session.send('[%s]',result);
-                                    result = "\n";
-                                });
-                        });
-
-                        req.on('doneInProc',function(rowCount, more){
-
-                            console.log(rowCount + ' rows returned');
-                            // if row count is 0 , ask option to raise RRD
-                            // If row count is 
-
-                        });
-
-                        connection.execSql(req);
+                    console.log(rowCount + ' rows in Demand');
+                    // console.log(demroleid + ' role ID');
+                    // session.send ('we are at 1 :: %s', rowCount);
                     
-                    });
-             
-            }
-            
-
-            // Function to get row count
-
-            function executerowcountStatement(session){
-
-                pool.acquire(function(err, connection){
-                    if (err){
-                        console.log('error in connecting ' + err);
-                        return;
+                });
+                var result = "";
+                demroleid.on('row', function(columns) {
+                    console.log('row in select of demand');
+                    columns.forEach(function(column) {
+                    if (column.value === null) {
+                        console.log('NULL');
+                    } else {
+                        result+= column.value + " ";
                     }
- 
-                        // Query the employee table with skill , location
-                        // var querysqlstring = "SELECT top 10 e.PersonalID,e.Employment_Status, e.Career_Track, e.Talent_Segment, e.Standard_Job FROM dbo.Skill$ s, dbo.Employee$ e where lower(s.Skill) like '%"+city.primarySkill+"%' and s.Experience ="+city.experienceLevel+" and e.Metro_City ='"+city.cities+"' and s.PersonalID = e.PersonalID";
-                        var querysqlstring = "SELECT count(*) FROM dbo.Employees";
-                        
-                        console.log(querysqlstring +': The query u want to send to DB');
-                        rowcounter = new Request(querysqlstring, function(err, rowCount, rows){
-                            if (err){
-                                console.log(err);
-                            }
-                            connection.release();
-                            console.log(rowCount + ' rows in employee and skill table');
-                            // session.send ('we are at 3 :: %s', rowCount);
-                        });
+                    });
+                    console.log(result);
+                    totalrowcount=result;
+                    console.log("total number of rows in demand:"+totalrowcount);
+                    result ="";
+                });
+                demroleid.on('doneInProc', function(rowCount, more) {
+                    console.log(rowCount + ' rows returned');
+                
+                });
+                connection.execSql(demroleid);
+            }
 
-                        var result = "";
-                        
-                        rowcounter.on('row',function(columns){
+            function executeDemandinsert(){
+                // insert a record in Demand DB
+                totalrowcount += 1;
+                var insertsqlstring ="insert into dbo.Demand$ values ("+totalrowcount+",null,null,null,"+city.cities+",null,"+city.experienceLevel+",null,null,null,null,null,"+city.primarySkill+",null,null,null)";
+                console.log("demand insert query :"+ insertsqlstring);
+                deminsert =  new Request(insertsqlstring, function(err, rowCount, rows){
+                if (err){
+                        console.log(err);
+                    }
+                    console.log(rowCount + ' in demand table rows');
+                    // console.log(deminsert + 'insert results in demand table');
+                    // session.send ('we are at 2 :: %s', rowCount);
+                });
+                var result = "";
+                deminsert.on('row', function(columns) {
+                    console.log('row in insert');
+                    columns.forEach(function(column) {
+                    if (column.value === null) {
+                        console.log('NULL');
+                    } else {
+                        result+= column.value + " ";
+                    }
+                    });
+                    console.log(result);
+                    totalrowcount=result;
+                    result ="";
+                });
+                deminsert.on('doneInProc', function(rowCount, more) {
+                    console.log(rowCount + ' rows returned');
+                
+                });
+                connection.execSql(deminsert);
+            }
+
+            function executeStatement(){
+ 
+                // Query the employee table with skill , location
+                var querysqlstring = "SELECT top 10 e.PersonalID,e.Employment_Status, e.Career_Track, e.Talent_Segment, e.Standard_Job FROM dbo.Skill$ s, dbo.Employee$ e where lower(s.Skill) like '%"+city.primarySkill+"%' and s.Experience ="+city.experienceLevel+" and e.Metro_City ='"+city.cities+"' and s.PersonalID = e.PersonalID";
+                console.log(querysqlstring +': The query u want to send to DB');
+                req = new Request(querysqlstring, function(err, rowCount, rows){
+                    if (err){
+                        console.log(err);
+                    }
+                    console.log(rowCount + ' rows in employee and skill table');
+                    // session.send ('we are at 3 :: %s', rowCount);
+                });
+
+                var timenow = moment();
+                // var formatted = timenow.format('YYYY-MM-DD HH:mm:ss Z');
+                var formatted = timenow.format('YYYYMMDDHHmmss');
+                // console.log(formatted);
+
+                var result = "";
+                var filename = "CandidateRecords"+formatted;
+                console.log(filename);
+
+                var stream = fs.createWriteStream(filename);
+                stream.once('open', function(fd) {
+
+                       req.on('row',function(columns){
                             columns.forEach(function(element) {
                                 if (element.value === null){
                                     console.log('NULL');
@@ -426,25 +313,30 @@ dialog.matches('SearchCandidate',[
                                 }
                             });
                             console.log(result);
+                            // email.sendemail(result);
+                            stream.write(result, function(err) { stream.end(); });
+                            
                             session.send('[%s]',result);
                             result = "\n";
-                            
                         });
+                });
 
-                        rowcounter.on('doneInProc',function(rowCount, more){
+                req.on('doneInProc',function(rowCount, more){
 
-                            console.log(rowCount + ' rows returned');
-                            // if row count is 0 , ask option to raise RRD
-                            // If row count is 
+                    console.log(rowCount + ' rows returned');
+                    // if row count is 0 , ask option to raise RRD
+                    // If row count is 
 
-                        });
-
-                        connection.execSql(rowcounter);
-                    
-                    });
-             
+                });
+                connection.execSql(req);
+            
             }
        
+        }
+
+    }
+]);
+
 dialog.matches('EmailCandidate', [
     function(session, args, next){
         session.send('Thanks for using the service. try searching resources any time: \'%s\'', session.message.text);
