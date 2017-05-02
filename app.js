@@ -20,14 +20,17 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
   
 // Create chat bot
 var connector = new builder.ChatConnector({
-    appId: 'c734e282-f433-4e96-bee0-1fdd51f9f343',
-    appPassword: 'r36uO6vxkfyxJy6kinY4Nkq'
+    appId: '6a298216-0a41-4d76-bcb4-aac9360f3bcf',
+    appPassword:'g3vym1ux6LzTXctrbfaKsTx'
+    //appId: 'c734e282-f433-4e96-bee0-1fdd51f9f343',
+    //appPassword: 'r36uO6vxkfyxJy6kinY4Nkq'
 });
 var bot = new builder.UniversalBot(connector);
 server.post('/api/messages', connector.listen());
 
 //create LUIS recognizer that points at our model and add it as a root '/' dialog
-var model = 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/b23f5c98-8066-4fbe-b512-0c1e3d19f983?subscription-key=8a6d7ac6787c4537aab3095d94985a35&verbose=true&timezoneOffset=0.0&q=';
+//var model = 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/b23f5c98-8066-4fbe-b512-0c1e3d19f983?subscription-key=8a6d7ac6787c4537aab3095d94985a35&verbose=true&timezoneOffset=0.0&q=';
+var model = 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/088b8e55-9834-4e59-8cb5-e88c4be6ea03?subscription-key=0bd36f66fb754b21b40ab530264d948d&verbose=true&timezoneOffset=0&q=';
 var recognizer = new builder.LuisRecognizer(model);
 var dialog = new builder.IntentDialog({ recognizers: [recognizer]});
 bot.dialog('/', dialog);
